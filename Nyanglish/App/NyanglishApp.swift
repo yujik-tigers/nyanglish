@@ -7,17 +7,17 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct NyanglishApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    init() {
+        UNUserNotificationCenter.current().delegate = NotificationPresentationDelegate.shared
+    }
 
+    var sharedModelContainer: ModelContainer = {
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try NyanglishModelStore.makeContainer()
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,7 +25,7 @@ struct NyanglishApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
         .modelContainer(sharedModelContainer)
     }
