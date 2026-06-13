@@ -53,7 +53,7 @@ struct WeeklyAttendanceIndicator: View {
                             onSelectDate(day.dateKey)
                         }
                         .accessibilityAddTraits(day.dateKey == selectedDateKey ? [.isSelected] : [])
-                        .accessibilityHint(day.isAvailable ? "해당 날짜로 이동합니다." : "아직 이동할 수 없는 날짜입니다.")
+                        .accessibilityHint(day.isAvailable ? "Open this date." : "This date is not available yet.")
                 }
             }
         }
@@ -61,7 +61,12 @@ struct WeeklyAttendanceIndicator: View {
     }
 
     private func dayCell(_ day: WeekDay, cellSize: CGFloat, circleSize: CGFloat) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
+            Text(day.weekdaySymbol)
+                .font(.caption.weight(day.dateKey == selectedDateKey ? .bold : .semibold))
+                .foregroundStyle(day.dateKey == selectedDateKey ? .primary : .secondary)
+                .frame(height: 14)
+
             ZStack {
                 RoundedRectangle(cornerRadius: cellSize * 0.26)
                     .fill(Color("AttendanceBadgeBackground").opacity(day.dateKey == selectedDateKey ? 0.16 : 0))
@@ -70,6 +75,12 @@ struct WeeklyAttendanceIndicator: View {
                 Circle()
                     .fill(circleColor(for: day))
                     .frame(width: circleSize, height: circleSize)
+                    .overlay {
+                        if day.isToday {
+                            Circle()
+                                .stroke(Color("AttendanceBadgeBackground"), lineWidth: day.dateKey == selectedDateKey ? 2 : 1.5)
+                        }
+                    }
 
                 Text("\(day.dayNumber)")
                     .font(.system(size: max(13, circleSize * 0.42), weight: .bold))
@@ -78,20 +89,13 @@ struct WeeklyAttendanceIndicator: View {
                 if checkedDateKeys.contains(day.dateKey) {
                     AttendanceStamp(size: circleSize * 0.57)
                 }
-
-                if day.isToday {
-                    Text("TODAY")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.secondary)
-                        .offset(y: -(cellSize / 2 + 5))
-                }
             }
             .frame(width: cellSize, height: cellSize)
 
-            Text(day.weekdaySymbol)
-                .font(.caption.weight(day.dateKey == selectedDateKey ? .bold : .semibold))
-                .foregroundStyle(day.dateKey == selectedDateKey ? .primary : .secondary)
-                .frame(height: 14)
+            Text(day.isToday ? "TODAY" : "")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(.secondary)
+                .frame(height: 8)
         }
         .frame(height: 76)
     }
@@ -114,7 +118,7 @@ struct WeeklyAttendanceIndicator: View {
 
     private func textColor(for day: WeekDay) -> Color {
         if checkedDateKeys.contains(day.dateKey) {
-            return Color("AttendanceBadgeBackground")
+            return Color("AttendanceCheckedTextColor")
         }
 
         if day.dateKey == selectedDateKey || day.isAvailable {
@@ -126,7 +130,7 @@ struct WeeklyAttendanceIndicator: View {
 
     private static func weekdaySymbol(for date: Date) -> String {
         let weekday = Calendar.current.component(.weekday, from: date)
-        return ["S", "M", "T", "W", "T", "F", "S"][weekday - 1]
+        return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][weekday - 1]
     }
 
     private static let daySpacing: CGFloat = 6

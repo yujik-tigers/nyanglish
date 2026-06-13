@@ -33,12 +33,12 @@ struct ImagePreview: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.horizontal, 16)
                 case .failure:
-                    statusText("이미지를 불러오지 못했습니다.")
+                    statusText("Couldn't load the image.")
                 case .empty:
                     ProgressView()
                         .tint(.white)
                 @unknown default:
-                    statusText("이미지를 불러오지 못했습니다.")
+                    statusText("Couldn't load the image.")
                 }
             }
 

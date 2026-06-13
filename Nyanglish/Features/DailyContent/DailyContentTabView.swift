@@ -14,6 +14,17 @@ struct DailyContentTabView: View {
     let checkedDateKeys: Set<String>
     let weeklyIndicatorHeight: CGFloat
 
+    @State private var isLogoCollapsed = false
+    @State private var hasScrolledWhileLogoCollapsed = false
+    @State private var isIgnoringPageSwitchTopReset = false
+    @State private var lastScrollDistance: CGFloat = 0
+
+    private let logoHeaderHeight: CGFloat = 52
+    private let logoCollapseTriggerOffset: CGFloat = 4
+    private let logoRecollapseConfirmationOffset: CGFloat = 12
+    private let logoExpandApproachOffset: CGFloat = 8
+    private let logoExpandTriggerOffset: CGFloat = 0.5
+
     private var pagerDateKeys: [String] {
         dateKeys.reversed()
     }
@@ -30,7 +41,39 @@ struct DailyContentTabView: View {
         dateKeysInSelectedWeek(from: Array(checkedDateKeys))
     }
 
+    private var logoCollapseProgress: CGFloat {
+        isLogoCollapsed ? 1 : 0
+    }
+
+    private var logoOpacity: Double {
+        Double(1 - logoCollapseProgress)
+    }
+
+    private var logoVerticalOffset: CGFloat {
+        -logoHeaderHeight * logoCollapseProgress
+    }
+
+    private var contentVerticalOffset: CGFloat {
+        logoHeaderHeight * (1 - logoCollapseProgress)
+    }
+
     var body: some View {
+        ZStack(alignment: .top) {
+            contentStack
+                .offset(y: contentVerticalOffset)
+
+            logoHeader
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .onChange(of: selectedDateKey) { _, _ in
+            isIgnoringPageSwitchTopReset = isLogoCollapsed
+            hasScrolledWhileLogoCollapsed = false
+            lastScrollDistance = 0
+        }
+    }
+
+    private var contentStack: some View {
         VStack(spacing: 0) {
             WeeklyAttendanceIndicator(
                 selectedDateKey: selectedDateKey,
@@ -39,7 +82,7 @@ struct DailyContentTabView: View {
                 onSelectDate: selectDate
             )
             .padding(.horizontal, 24)
-            .padding(.top, 16)
+            .padding(.top, 4)
             .padding(.bottom, 4)
             .frame(height: weeklyIndicatorHeight)
 
@@ -49,12 +92,30 @@ struct DailyContentTabView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var logoHeader: some View {
+        Image("OnboardingLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 116, height: 42)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
+            .frame(maxWidth: .infinity)
+            .offset(y: logoVerticalOffset)
+            .frame(height: logoHeaderHeight, alignment: .top)
+            .clipped()
+            .opacity(logoOpacity)
+            .allowsHitTesting(false)
+    }
+
     private var dailyPager: some View {
         TabView(selection: $selectedDateKey) {
             ForEach(pagerDateKeys, id: \.self) { dateKey in
                 DailyContentPage(
                     dateKey: dateKey,
-                    availableDateKeys: availableDateKeys
+                    availableDateKeys: availableDateKeys,
+                    onScrollOffsetChange: { distance in
+                        updateLogoScrollDistance(distance, for: dateKey)
+                    }
                 )
                 .tag(dateKey)
             }
@@ -77,8 +138,59 @@ struct DailyContentTabView: View {
             return
         }
 
+        isIgnoringPageSwitchTopReset = isLogoCollapsed
+        hasScrolledWhileLogoCollapsed = false
+        lastScrollDistance = 0
+
         withAnimation(.easeInOut(duration: 0.18)) {
             selectedDateKey = dateKey
         }
+    }
+
+    private func updateLogoScrollDistance(_ distance: CGFloat, for dateKey: String) {
+        guard dateKey == selectedDateKey else {
+            return
+        }
+
+        if isIgnoringPageSwitchTopReset, distance <= logoExpandTriggerOffset {
+            return
+        }
+
+        isIgnoringPageSwitchTopReset = false
+
+        if isLogoCollapsed {
+            if distance > logoRecollapseConfirmationOffset {
+                hasScrolledWhileLogoCollapsed = true
+            }
+
+            if distance <= logoExpandTriggerOffset, lastScrollDistance > logoExpandApproachOffset {
+                return
+            }
+
+            defer {
+                lastScrollDistance = distance
+            }
+
+            guard hasScrolledWhileLogoCollapsed, distance <= logoExpandTriggerOffset else {
+                return
+            }
+
+            withAnimation(.easeOut(duration: 0.16)) {
+                isLogoCollapsed = false
+            }
+            hasScrolledWhileLogoCollapsed = false
+            return
+        }
+
+        lastScrollDistance = distance
+
+        guard distance > logoCollapseTriggerOffset else {
+            return
+        }
+
+        withAnimation(.easeOut(duration: 0.16)) {
+            isLogoCollapsed = true
+        }
+        hasScrolledWhileLogoCollapsed = false
     }
 }

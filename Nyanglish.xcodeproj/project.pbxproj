@@ -21,6 +21,8 @@
 		26A0001B2FC4A00000000001 /* Nyanglish/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */; };
 		26A0001C2FC4A00000000001 /* NyanglishWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 26A000012FC4A00000000001 /* NyanglishWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		26A0002B2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */; };
+		26A0002D2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */; };
+		26A0002F2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +74,8 @@
 		26A0000C2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/NyanglishModelStore.swift; sourceTree = "<group>"; };
 		26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Nyanglish/Assets.xcassets; sourceTree = "<group>"; };
 		26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentSupplementStore.swift; sourceTree = "<group>"; };
+		26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/AttendanceSyncStore.swift; sourceTree = "<group>"; };
+		26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentCachePolicy.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -160,6 +164,8 @@
 				26A0000B2FC4A00000000001 /* Nyanglish/Core/Date/Date+Nyanglish.swift */,
 				26A0000C2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift */,
 				26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */,
+				26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */,
+				26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */,
 				26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */,
 			);
 			name = "Recovered References";
@@ -383,6 +389,8 @@
 				26A000192FC4A00000000001 /* Nyanglish/Core/Date/Date+Nyanglish.swift in Sources */,
 				26A0001A2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift in Sources */,
 				26A0002B2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift in Sources */,
+				26A0002D2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift in Sources */,
+				26A0002F2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -540,12 +548,16 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "yujik-tigers.Nyanglish";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -557,6 +569,7 @@
 				CODE_SIGN_ENTITLEMENTS = Config/Nyanglish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9B8ZF2YT42;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/Nyanglish-Info.plist";
@@ -568,12 +581,16 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "yujik-tigers.Nyanglish";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -589,11 +606,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "yujik-tigers.NyanglishTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nyanglish.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Nyanglish";
 			};
 			name = Debug;
@@ -610,11 +631,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "yujik-tigers.NyanglishTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nyanglish.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Nyanglish";
 			};
 			name = Release;
@@ -629,11 +654,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "yujik-tigers.NyanglishUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = Nyanglish;
 			};
 			name = Debug;
@@ -648,11 +677,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "yujik-tigers.NyanglishUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = Nyanglish;
 			};
 			name = Release;
@@ -678,12 +711,16 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -708,11 +745,15 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

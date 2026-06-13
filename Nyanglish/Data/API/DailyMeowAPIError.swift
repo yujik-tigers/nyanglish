@@ -23,11 +23,11 @@ enum DailyMeowAPIError: LocalizedError {
     private var message: String {
         switch self {
         case .httpStatus(404, let detail) where detail == "No approved meme available":
-            return "오늘 휴강이에요!"
+            return "No lesson is available today."
         case .httpStatus(404, let detail) where detail == "No approved content available":
-            return "오늘 휴강이에요!"
+            return "No lesson is available today."
         default:
-            return "서버에 문제가 생겼어요! 잠시 후 다시 시도해 주세요."
+            return "Something went wrong. Please try again later."
         }
     }
 }

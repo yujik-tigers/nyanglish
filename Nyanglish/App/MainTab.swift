@@ -30,11 +30,11 @@ enum MainTab: String, CaseIterable, Identifiable {
     var accessibilityLabel: String {
         switch self {
         case .calendar:
-            return "캘린더"
+            return "Calendar"
         case .content:
-            return "컨텐츠"
+            return "Content"
         case .settings:
-            return "설정"
+            return "Settings"
         }
     }
 }

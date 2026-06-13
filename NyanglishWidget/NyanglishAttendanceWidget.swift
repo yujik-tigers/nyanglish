@@ -44,6 +44,7 @@ struct NyanglishAttendanceProvider: TimelineProvider {
             let container = try NyanglishModelStore.makeContainer()
             let context = ModelContext(container)
             let hasCheckedAttendance = try hasAttendanceRecord(for: dateKey, in: context)
+                || AttendanceSyncStore.hasCheckedAttendance(for: dateKey)
 
             guard hasCheckedAttendance else {
                 return NyanglishAttendanceEntry(
@@ -140,8 +141,8 @@ enum NyanglishWidgetStatusStore {
 }
 
 struct CheckAttendanceIntent: AppIntent {
-    static var title: LocalizedStringResource = "출석하기"
-    static var description = IntentDescription("오늘의 콘텐츠를 가져오고 출석을 저장합니다.")
+    static var title: LocalizedStringResource = "Check in"
+    static var description = IntentDescription("Fetch today's content and save your attendance.")
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -159,8 +160,10 @@ struct CheckAttendanceIntent: AppIntent {
 
                 context.insert(AttendanceRecord(dateKey: dateKey))
                 try context.save()
+                DailyContentCachePolicy.pruneExpiredContent(in: context)
             }
 
+            AttendanceSyncStore.markAttendanceChecked(for: dateKey)
             NyanglishWidgetStatusStore.clearLoadErrorMessage()
         } catch {
             NyanglishWidgetStatusStore.saveLoadErrorMessage(error.localizedDescription, for: dateKey)
@@ -209,7 +212,7 @@ struct NyanglishAttendanceWidgetView: View {
                 .scaledToFill()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
-                .accessibilityLabel("오늘 컨텐츠 이미지")
+                .accessibilityLabel("Today's content image")
         } else {
             Image(systemName: "photo")
                 .font(.system(size: 32, weight: .semibold))
@@ -219,20 +222,19 @@ struct NyanglishAttendanceWidgetView: View {
 
     private var attendanceButton: some View {
         Button(intent: CheckAttendanceIntent()) {
-            ZStack(alignment: .bottom) {
+            ZStack {
                 Image("second-logo")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 90, height: 90)
-                    .offset(y: -3)
+                    .frame(width: 118, height: 118)
                     .accessibilityHidden(true)
 
-                Text("출석하기")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color(.darkGray))
+                Text("Check in")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .offset(y: -2)
+                    .minimumScaleFactor(0.65)
+                    .offset(y: 16)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -249,8 +251,8 @@ struct NyanglishAttendanceWidget: Widget {
         StaticConfiguration(kind: kind, provider: NyanglishAttendanceProvider()) { entry in
             NyanglishAttendanceWidgetView(entry: entry)
         }
-        .configurationDisplayName("냥글리쉬 출석")
-        .description("오늘 출석하고 콘텐츠 이미지를 확인합니다.")
+        .configurationDisplayName("Nyanglish Check-in")
+        .description("Check in today and view your content image.")
         .supportedFamilies([.systemSmall])
         .contentMarginsDisabled()
     }
@@ -260,6 +262,6 @@ struct NyanglishAttendanceWidget: Widget {
     NyanglishAttendanceWidget()
 } timeline: {
     NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: nil)
-    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: "오늘 휴강이에요!")
+    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: "No lesson is available today.")
     NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: true, imageData: nil, loadErrorMessage: nil)
 }

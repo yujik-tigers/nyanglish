@@ -78,9 +78,12 @@ struct SettingsView: View {
                 dataSection
                 widgetSection
                 appInfoSection
+#if DEBUG
+                developerSection
+#endif
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 24)
+            .padding(.horizontal, 32)
+            .padding(.top, 36)
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -98,27 +101,29 @@ struct SettingsView: View {
                 primaryButton: .destructive(Text(alert.buttonTitle)) {
                     resetData(alert.kind)
                 },
-                secondaryButton: .cancel(Text("취소"))
+                secondaryButton: .cancel(Text("Cancel"))
             )
         }
     }
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("설정")
-                .font(Self.headerFont)
-                .foregroundStyle(Self.primaryTextColor)
+        VStack(alignment: .center, spacing: 0) {
+            Text("Settings")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var notificationSection: some View {
-        settingsGroup("알림") {
+        settingsGroup("Notifications") {
             settingsRow {
                 Toggle(isOn: notificationToggleBinding) {
-                    settingsRowLabel(icon: "bell.badge", title: "출석 알림")
+                    settingsRowLabel(icon: "bell", title: "Attendance Reminder")
                 }
                 .font(Self.settingsFont)
+                .tint(Color("PrimaryButtonBackground"))
             }
 
             settingsDivider
@@ -134,7 +139,7 @@ struct SettingsView: View {
                     Button {
                         openURL(URL(string: UIApplication.openSettingsURLString)!)
                     } label: {
-                        settingsRowLabel(icon: "gear", title: "알림 권한 열기")
+                        settingsRowLabel(icon: "gear", title: "Open Notification Settings")
                     }
                     .font(Self.settingsFont)
                     .foregroundStyle(Self.primaryTextColor)
@@ -143,20 +148,6 @@ struct SettingsView: View {
                 settingsRow {
                     notificationTimeRow
                 }
-            }
-
-            settingsDivider
-
-            settingsRow {
-                Button {
-                    Task {
-                        await scheduleTestReminder()
-                    }
-                } label: {
-                    settingsRowLabel(icon: "bell.and.waves.left.and.right", title: "테스트 알림 보내기")
-                }
-                .font(Self.settingsFont)
-                .foregroundStyle(Self.primaryTextColor)
             }
 
             if let errorMessage {
@@ -175,26 +166,38 @@ struct SettingsView: View {
         HStack(spacing: 10) {
             settingsIcon("clock")
 
-            DatePicker(
-                "알림 시간",
-                selection: reminderTimeBinding,
-                displayedComponents: .hourAndMinute
-            )
-            .font(Self.settingsFont)
-            .foregroundStyle(Self.primaryTextColor)
+            Text("Reminder Time")
+                .font(Self.settingsFont)
+                .foregroundStyle(Self.primaryTextColor)
+
+            Spacer()
+
+            datePickerPill
         }
         .disabled(!attendanceNotificationEnabled)
         .opacity(attendanceNotificationEnabled ? 1 : 0.38)
         .animation(.easeInOut(duration: 0.18), value: attendanceNotificationEnabled)
     }
 
+    private var datePickerPill: some View {
+        DatePicker(
+            "",
+            selection: reminderTimeBinding,
+            displayedComponents: .hourAndMinute
+        )
+        .labelsHidden()
+        .datePickerStyle(.compact)
+        .font(Self.valueFont)
+        .tint(Color(.darkGray))
+    }
+
     private var attendanceSummarySection: some View {
-        settingsGroup("기록") {
+        settingsGroup("Attendance") {
             settingsRow {
                 settingValueRow(
                     icon: "checkmark.seal.fill",
-                    title: "오늘 출석",
-                    value: hasCheckedToday ? "완료" : "아직 전"
+                    title: "Today",
+                    value: hasCheckedToday ? "Done" : "Not yet"
                 )
             }
 
@@ -203,8 +206,8 @@ struct SettingsView: View {
             settingsRow {
                 settingValueRow(
                     icon: "flame.fill",
-                    title: "연속 출석",
-                    value: "\(currentStreakCount)일"
+                    title: "Streak",
+                    value: "\(currentStreakCount)d"
                 )
             }
 
@@ -213,70 +216,80 @@ struct SettingsView: View {
             settingsRow {
                 settingValueRow(
                     icon: "calendar",
-                    title: "총 출석일",
-                    value: "\(totalAttendanceCount)일"
+                    title: "Total Days",
+                    value: "\(totalAttendanceCount)d"
                 )
             }
         }
     }
 
     private var dataSection: some View {
-        settingsGroup("데이터") {
+        settingsGroup("Data") {
             settingsRow {
                 Button(role: .destructive) {
                     dataResetAlert = .all
                 } label: {
-                    settingsRowLabel(icon: "trash", title: "모든 기록 초기화")
+                    settingsRowLabel(icon: "trash", title: "Reset All Records")
                 }
                 .font(Self.settingsFont)
                 .foregroundStyle(Self.accentColor)
             }
 
+        }
+    }
+
+    private var widgetSection: some View {
+        settingsGroup("Widgets") {
+            settingsRow {
+                settingsRowLabel(
+                    icon: "square.grid.2x2",
+                    title: "Add the widget to your Home Screen for quick check-ins."
+                )
+            }
+        }
+    }
+
+    private var appInfoSection: some View {
+        settingsGroup("About") {
+            settingsRow {
+                settingValueRow(
+                    icon: "info.circle",
+                    title: "Version",
+                    value: appVersionText
+                )
+            }
+        }
+    }
+
 #if DEBUG
+    private var developerSection: some View {
+        settingsGroup("Developer") {
+            settingsRow {
+                Button {
+                    Task {
+                        await scheduleTestReminder()
+                    }
+                } label: {
+                    settingsRowLabel(icon: "bell.and.waves.left.and.right", title: "Send Test Notification")
+                }
+                .font(Self.settingsFont)
+                .foregroundStyle(Self.primaryTextColor)
+            }
+
             settingsDivider
 
             settingsRow {
                 Button {
                     deleteTodayTestData()
                 } label: {
-                    settingsRowLabel(icon: "wrench.and.screwdriver", title: "오늘 테스트 데이터 삭제")
+                    settingsRowLabel(icon: "wrench.and.screwdriver", title: "Delete Today's Test Data")
                 }
                 .font(Self.settingsFont)
                 .foregroundStyle(Self.primaryTextColor)
             }
+        }
+    }
 #endif
-        }
-    }
-
-    private var widgetSection: some View {
-        settingsGroup("위젯") {
-            settingsRow {
-                VStack(alignment: .leading, spacing: 8) {
-                    settingsRowLabel(
-                        icon: "square.grid.2x2",
-                        title: "홈 화면에서 앱 아이콘을 길게 누른 뒤 위젯을 추가할 수 있습니다."
-                    )
-
-                    Text("위젯을 통해 바로 출석할 수 있습니다.")
-                        .font(Self.helperFont)
-                        .foregroundStyle(Self.secondaryTextColor)
-                        .padding(.leading, Self.iconFrameSize + 10)
-                }
-            }
-        }
-    }
-
-    private var appInfoSection: some View {
-        settingsGroup("앱") {
-            settingsRow {
-                settingValueRow(
-                    icon: "info.circle",
-                    title: "버전",
-                    value: appVersionText
-                )
-            }
-        }
-    }
 
     private var notificationToggleBinding: Binding<Bool> {
         Binding {
@@ -299,30 +312,36 @@ struct SettingsView: View {
         _ title: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(Self.settingsFont.weight(.bold))
-                .foregroundStyle(Self.secondaryTextColor)
-                .padding(.horizontal, 14)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title)
+                    .font(Self.sectionTitleFont)
+                    .foregroundStyle(Self.sectionTitleColor)
+                    .padding(.horizontal, Self.groupHorizontalPadding)
+                    .padding(.top, 12)
+                    .padding(.bottom, 2)
 
-            VStack(spacing: 0) {
                 content()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color(.systemGray5), lineWidth: 1)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 
     private func settingsRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
             .padding(.vertical, 12)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, Self.groupHorizontalPadding)
     }
 
     private var settingsDivider: some View {
         Divider()
-            .padding(.leading, 14 + Self.iconFrameSize + 10)
+            .padding(.horizontal, Self.groupHorizontalPadding)
     }
 
     private func settingValueRow(icon: String, title: String, value: String) -> some View {
@@ -335,6 +354,7 @@ struct SettingsView: View {
             Spacer()
 
             Text(value)
+                .font(Self.valueFont)
                 .foregroundStyle(Self.primaryTextColor)
         }
         .font(Self.settingsFont)
@@ -381,13 +401,18 @@ struct SettingsView: View {
 
             let hour = attendanceNotificationMinutesAfterMidnight / 60
             let minute = attendanceNotificationMinutesAfterMidnight % 60
-            try await AttendanceNotificationScheduler.scheduleDailyReminder(hour: hour, minute: minute)
+            try await AttendanceNotificationScheduler.scheduleDailyReminder(
+                hour: hour,
+                minute: minute,
+                checkedDateKeys: Set(attendanceRecords.map(\.dateKey))
+            )
         } catch {
             attendanceNotificationEnabled = false
-            errorMessage = "알림을 설정하지 못했습니다."
+            errorMessage = "Couldn't set up notifications."
         }
     }
 
+#if DEBUG
     private func scheduleTestReminder() async {
         errorMessage = nil
 
@@ -402,15 +427,16 @@ struct SettingsView: View {
             notificationStatus = status
 
             guard status == .authorized || status == .provisional || status == .ephemeral else {
-                errorMessage = "알림 권한이 꺼져 있습니다."
+                errorMessage = "Notifications are turned off."
                 return
             }
 
             try await AttendanceNotificationScheduler.scheduleTestReminder()
         } catch {
-            errorMessage = "테스트 알림을 설정하지 못했습니다."
+            errorMessage = "Couldn't schedule the test notification."
         }
     }
+#endif
 
     private func dateForReminderMinutes(_ minutesAfterMidnight: Int) -> Date {
         let calendar = Calendar.current
@@ -427,6 +453,8 @@ struct SettingsView: View {
 
         do {
             try modelContext.save()
+            AttendanceSyncStore.clearAll()
+            DailyContentSupplementStore.clearAllFullTranslations()
             WidgetCenter.shared.reloadAllTimelines()
             onResetTodayData()
         } catch {
@@ -436,17 +464,22 @@ struct SettingsView: View {
 
     private var appVersionText: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-        return "\(version) (\(build))"
+        let suffix = Bundle.main.object(forInfoDictionaryKey: "NyanglishVersionSuffix") as? String
+        return [version, suffix]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
     }
 
     private static let settingsFont = Font.system(size: 15, weight: .regular)
-    private static let helperFont = Font.system(size: 13, weight: .regular)
-    private static let headerFont = Font.system(size: 22, weight: .bold)
-    private static let iconFont = Font.system(size: 18, weight: .semibold)
-    private static let iconFrameSize: CGFloat = 24
+    private static let valueFont = Font.system(size: 15, weight: .regular)
+    private static let sectionTitleFont = Font.system(size: 14, weight: .semibold)
+    private static let iconFont = Font.system(size: 16, weight: .semibold)
+    private static let iconFrameSize: CGFloat = 20
+    private static let groupHorizontalPadding: CGFloat = 24
     private static let primaryTextColor = Color.black
     private static let secondaryTextColor = Color(.systemGray)
+    private static let sectionTitleColor = Color(.systemGray2)
     private static let iconColor = Color(.darkGray)
     private static let accentColor = Color.red
 
@@ -464,6 +497,8 @@ struct SettingsView: View {
 
         do {
             try modelContext.save()
+            AttendanceSyncStore.clearAttendance(for: todayKey)
+            DailyContentSupplementStore.removeFullTranslation(for: todayKey)
             WidgetCenter.shared.reloadAllTimelines()
             onResetTodayData()
         } catch {
@@ -492,8 +527,8 @@ private struct DataResetAlert: Identifiable {
 
     static let all = DataResetAlert(
         kind: .all,
-        title: "모든 기록을 초기화할까요?",
-        message: "출석 기록과 저장된 콘텐츠가 모두 삭제됩니다. 삭제된 데이터는 복구할 수 없습니다.",
-        buttonTitle: "초기화"
+        title: "Reset all records?",
+        message: "This will delete your attendance history and saved content. This action can't be undone.",
+        buttonTitle: "Reset"
     )
 }

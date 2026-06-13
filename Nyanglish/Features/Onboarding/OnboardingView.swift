@@ -10,38 +10,88 @@ import SwiftUI
 struct OnboardingView: View {
     let onStart: () -> Void
 
+    @State private var logoRevealProgress: CGFloat = 0
+    @State private var isStartVisible = false
+
+    private let logoAnimationDuration: Double = 1.6
+    private let logoSize = CGSize(width: 190, height: 96)
+
     var body: some View {
-        VStack(spacing: 0) {
-            Image("OnboardingLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 160, height: 80)
+        VStack(spacing: 30) {
+            Spacer()
 
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(.secondarySystemBackground))
-                .overlay {
-                    // 1080 x 1350 px
-                    Image(systemName: "photo")
-                        .font(.system(size: 44, weight: .regular))
-                        .foregroundStyle(.secondary)
-                }
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: 620)
-                .padding(.horizontal, 32)
-
-            Spacer(minLength: 20)
+            revealedLogo
 
             Button {
                 onStart()
             } label: {
-                Text("시작하기")
+                Text("Start")
                     .font(.headline.weight(.bold))
             }
             .buttonStyle(.primary(width: 176, verticalPadding: 20))
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .opacity(isStartVisible ? 1 : 0)
+            .offset(y: isStartVisible ? 0 : 10)
+            .disabled(!isStartVisible)
+
+            Spacer()
         }
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("Canvas"))
+        .onAppear {
+            startIntroAnimation()
+        }
+    }
+
+    private var revealedLogo: some View {
+        Image("OnboardingLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: logoSize.width, height: logoSize.height)
+            .mask {
+                logoRevealMask
+            }
+    }
+
+    private var logoRevealMask: some View {
+        GeometryReader { proxy in
+            if logoRevealProgress >= 0.999 {
+                Rectangle()
+                    .fill(.white)
+            } else {
+                let width = proxy.size.width
+                let revealWidth = width * logoRevealProgress
+                let gradientWidth = min(44, revealWidth)
+
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(.white)
+                        .frame(width: max(0, revealWidth - gradientWidth))
+
+                    LinearGradient(
+                        colors: [.white, .white.opacity(0)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: gradientWidth)
+                    .offset(x: max(0, revealWidth - gradientWidth))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func startIntroAnimation() {
+        logoRevealProgress = 0
+        isStartVisible = false
+
+        withAnimation(.easeInOut(duration: logoAnimationDuration)) {
+            logoRevealProgress = 1
+        }
+
+        withAnimation(.easeOut(duration: 0.35).delay(logoAnimationDuration + 0.12)) {
+            isStartVisible = true
+        }
     }
 }
 

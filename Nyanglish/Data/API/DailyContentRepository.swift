@@ -9,6 +9,13 @@ import Foundation
 
 enum DailyContentRepository {
     static func fetchContent(for dateKey: String) async throws -> DailyContentItem {
+        try await fetchContentResult(for: dateKey, cacheSupplement: true).item
+    }
+
+    static func fetchContentResult(
+        for dateKey: String,
+        cacheSupplement: Bool
+    ) async throws -> DailyContentFetchResult {
         let response: DailyMeowAPIResponse<DailyMeowContentResponse> = try await DailyMeowAPIClient.shared.get(
             path: "/api/v1/contents/",
             queryItems: [
@@ -18,7 +25,19 @@ enum DailyContentRepository {
         )
 
         let date = Date.nyanglishDate(fromKey: dateKey) ?? .now
-        DailyContentSupplementStore.saveFullTranslation(response.content.fullTranslationText, for: dateKey)
-        return response.content.dailyContentItem(dateKey: dateKey, date: date)
+        let fullTranslation = response.content.fullTranslationText
+        if cacheSupplement {
+            DailyContentSupplementStore.saveFullTranslation(fullTranslation, for: dateKey)
+        }
+
+        return DailyContentFetchResult(
+            item: response.content.dailyContentItem(dateKey: dateKey, date: date),
+            fullTranslation: fullTranslation
+        )
     }
+}
+
+struct DailyContentFetchResult {
+    let item: DailyContentItem
+    let fullTranslation: String?
 }

@@ -93,7 +93,7 @@ struct DailyMeowContentResponse: Decodable {
     }
 
     private var primaryText: String {
-        firstNonEmpty(expression, content, title, background) ?? "오늘의 컨텐츠"
+        firstNonEmpty(expression, content, title, background) ?? "Today's content"
     }
 
     private var secondaryText: String {

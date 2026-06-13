@@ -12,25 +12,33 @@ import WidgetKit
 struct DailyContentPage: View {
     let dateKey: String
     let availableDateKeys: Set<String>
+    let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("attendanceNotificationEnabled") private var attendanceNotificationEnabled = false
+    @AppStorage("attendanceNotificationMinutesAfterMidnight") private var attendanceNotificationMinutesAfterMidnight = 20 * 60
     @Query private var contents: [DailyContentItem]
     @Query private var attendanceRecords: [AttendanceRecord]
     @State private var isLoading = false
     @State private var loadErrorMessage: String?
-    @State private var isAtScrollBottom = true
-    @State private var scrollViewportHeight: CGFloat = 0
     @State private var attendancePromptScale: CGFloat = 1
     @State private var attendancePromptOpacity: Double = 1
     @State private var previewImage: ImagePreviewItem?
     @State private var isFullTranslationExpanded = false
+    @State private var transientContent: DailyContentItem?
+    @State private var transientFullTranslation: String?
+
+    private let contentTopPadding: CGFloat = 0
+    private let logoCollapseDistance: CGFloat = 44
 
     init(
         dateKey: String,
-        availableDateKeys: Set<String>
+        availableDateKeys: Set<String>,
+        onScrollOffsetChange: ((CGFloat) -> Void)? = nil
     ) {
         self.dateKey = dateKey
         self.availableDateKeys = availableDateKeys
+        self.onScrollOffsetChange = onScrollOffsetChange
         let selectedDateKey = dateKey
 
         _contents = Query(
@@ -41,7 +49,7 @@ struct DailyContentPage: View {
     }
 
     private var content: DailyContentItem? {
-        contents.first
+        contents.first ?? transientContent
     }
 
     private var date: Date {
@@ -55,7 +63,7 @@ struct DailyContentPage: View {
     private var hasCheckedAttendance: Bool {
         attendanceRecords.contains { record in
             record.dateKey == dateKey
-        }
+        } || (isToday && AttendanceSyncStore.hasCheckedAttendance(for: dateKey))
     }
 
     private var isAvailableDate: Bool {
@@ -68,6 +76,14 @@ struct DailyContentPage: View {
 
     private var canShowContent: Bool {
         hasCheckedAttendance
+    }
+
+    private var shouldCacheContent: Bool {
+        DailyContentCachePolicy.shouldCacheContent(for: dateKey)
+    }
+
+    private var contentLoadTrigger: String {
+        "\(dateKey)-\(contents.isEmpty)-\(transientContent == nil)"
     }
 
     var body: some View {
@@ -85,7 +101,7 @@ struct DailyContentPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.28), value: hasCheckedAttendance)
-        .task(id: dateKey) {
+        .task(id: contentLoadTrigger) {
             await loadContentIfNeeded()
         }
         .fullScreenCover(item: $previewImage) { item in
@@ -102,59 +118,24 @@ struct DailyContentPage: View {
                     .padding(.bottom, 8)
 
                 contentStateSection
-
-                scrollBottomMarker
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
-            .padding(.top, 16)
+            .padding(.top, contentTopPadding)
             .padding(.bottom, 32)
         }
-        .coordinateSpace(name: Self.scrollCoordinateSpace)
-        .background { scrollViewportReader }
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            min(max(geometry.contentOffset.y, 0), logoCollapseDistance)
+        } action: { _, distance in
+            onScrollOffsetChange?(distance)
+        }
         .scrollContentBackground(.hidden)
-        .mask(scrollFadeMask)
-        .onPreferenceChange(ScrollViewportHeightPreferenceKey.self) { height in
-            scrollViewportHeight = height
-        }
-        .onPreferenceChange(ScrollBottomPreferenceKey.self) { bottomY in
-            updateScrollBottomState(bottomY: bottomY)
-        }
     }
 
     private var attendancePromptSection: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            VStack(spacing: 26) {
-                Button {
-                    Task {
-                        await checkAttendance()
-                    }
-                } label: {
-                    VStack(spacing: 2) {
-                        if isLoading {
-                            ProgressView()
-                                .tint(Color("AttendanceBadgeBackground"))
-                                .frame(width: 96, height: 96)
-                        } else {
-                            Image("second-logo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 158, height: 158)
-                                .accessibilityHidden(true)
-
-                            Text("출석하기")
-                                .font(.headline.weight(.bold))
-                                .foregroundStyle(Color(.darkGray))
-                        }
-                    }
-                    .frame(width: 150, height: 150)
-                    .scaleEffect(attendancePromptScale)
-                    .opacity(attendancePromptOpacity)
-                }
-                .buttonStyle(AttendancePawButtonStyle())
-                .disabled(isLoading)
+        GeometryReader { proxy in
+            VStack(spacing: 22) {
+                attendancePromptButton
 
                 if let loadErrorMessage {
                     Text(loadErrorMessage)
@@ -163,10 +144,42 @@ struct DailyContentPage: View {
                         .multilineTextAlignment(.center)
                 }
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity)
+            .padding(.top, max(112, proxy.size.height * 0.24))
         }
         .transition(.opacity)
+    }
+
+    private var attendancePromptButton: some View {
+        Button {
+            Task {
+                await checkAttendance()
+            }
+        } label: {
+            ZStack {
+                if isLoading {
+                    ProgressView()
+                        .tint(Color("AttendanceBadgeBackground"))
+                        .frame(width: 96, height: 96)
+                } else {
+                    Image("second-logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 158, height: 158)
+                        .accessibilityHidden(true)
+
+                    Text("Check In")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(.white))
+                        .offset(y: 20)
+                }
+            }
+            .frame(width: 158, height: 158)
+            .scaleEffect(attendancePromptScale)
+            .opacity(attendancePromptOpacity)
+        }
+        .buttonStyle(AttendancePawButtonStyle())
+        .disabled(isLoading)
     }
 
     private var missedAttendancePage: some View {
@@ -192,7 +205,7 @@ struct DailyContentPage: View {
                             previewImage = ImagePreviewItem(url: url)
                         }
                 case .failure:
-                    imagePlaceholder(text: "이미지를 불러오지 못했습니다.")
+                    imagePlaceholder(text: "Couldn't load the image.")
                         .frame(maxWidth: .infinity, minHeight: 220)
                         .background(Color(.secondarySystemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -202,7 +215,7 @@ struct DailyContentPage: View {
                         .background(Color(.secondarySystemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 @unknown default:
-                    imagePlaceholder(text: "Content Image")
+                    imagePlaceholder(text: "Image")
                         .frame(maxWidth: .infinity, minHeight: 220)
                         .background(Color(.secondarySystemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -210,7 +223,7 @@ struct DailyContentPage: View {
             }
             .contextMenu {
                 ShareLink(item: url) {
-                    Label("이미지 저장", systemImage: "square.and.arrow.down")
+                    Label("Save Image", systemImage: "square.and.arrow.down")
                 }
 
                 if let content {
@@ -244,13 +257,13 @@ struct DailyContentPage: View {
         if let content {
             expressionSection(content)
         } else if isLoading {
-            statusSection(text: "컨텐츠를 불러오는 중입니다.")
+            statusSection(text: "Loading today's content...")
         } else if let loadErrorMessage {
             statusSection(text: loadErrorMessage)
         } else if isToday, !hasCheckedAttendance {
-            statusSection(text: "출석 체크하면 오늘의 컨텐츠를 불러옵니다.")
+            statusSection(text: "Check in to unlock today's content.")
         } else {
-            statusSection(text: "컨텐츠를 준비 중입니다.")
+            statusSection(text: "Content is getting ready.")
         }
     }
 
@@ -270,20 +283,38 @@ struct DailyContentPage: View {
                 .foregroundStyle(.primary)
                 .lineSpacing(4)
 
-            if let fullTranslation = DailyContentSupplementStore.fullTranslation(for: content.dateKey),
+            if let fullTranslation = fullTranslation(for: content),
                !fullTranslation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                DisclosureGroup(isExpanded: $isFullTranslationExpanded) {
-                    Text(fullTranslation)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                        .lineSpacing(4)
-                        .padding(.top, 8)
-                } label: {
-                    Text("전체 번역 보기")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color(.darkGray))
+                VStack(alignment: .leading, spacing: 8) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            isFullTranslationExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text("View Full Translation")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
+                            Spacer(minLength: 12)
+
+                            Image(systemName: isFullTranslationExpanded ? "chevron.up" : "chevron.down")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if isFullTranslationExpanded {
+                        Text(fullTranslation)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(4)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
-                .tint(Color(.darkGray))
             }
 
             Divider()
@@ -308,6 +339,14 @@ struct DailyContentPage: View {
         }
     }
 
+    private func fullTranslation(for content: DailyContentItem) -> String? {
+        if contents.isEmpty, content.dateKey == transientContent?.dateKey {
+            return transientFullTranslation
+        }
+
+        return DailyContentSupplementStore.fullTranslation(for: content.dateKey)
+    }
+
     private func statusSection(text: String) -> some View {
         Text(text)
             .font(.body)
@@ -319,21 +358,22 @@ struct DailyContentPage: View {
     }
 
     private var missedAttendanceSection: some View {
-        VStack {
+        VStack(spacing: 0) {
             Spacer()
+                .frame(height: 130)
 
             AnimatedGIFView(resourceName: "SleepingCat")
                 .frame(width: 150, height: 120)
                 .padding(.bottom, 10)
 
-            Text("수업에 빠졌어요!")
-                .font(.headline.weight(.bold))
+            Text("Lesson missed. Catch the next one!")
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(Color(.darkGray))
                 .multilineTextAlignment(.center)
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, 24)
         .contentShape(Rectangle())
     }
@@ -342,7 +382,7 @@ struct DailyContentPage: View {
         VStack {
             Spacer()
 
-            Text("아직 열리지 않았어요")
+            Text("Not available yet")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -354,57 +394,36 @@ struct DailyContentPage: View {
         .contentShape(Rectangle())
     }
 
-    private var scrollFadeMask: some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(.black)
-
-            if !isAtScrollBottom {
-                LinearGradient(
-                    colors: [.black, .clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 56)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var scrollBottomMarker: some View {
-        GeometryReader { markerProxy in
-            Color.clear.preference(
-                key: ScrollBottomPreferenceKey.self,
-                value: markerProxy.frame(in: .named(Self.scrollCoordinateSpace)).maxY
-            )
-        }
-        .frame(height: 0)
-    }
-
-    private var scrollViewportReader: some View {
-        GeometryReader { proxy in
-            Color.clear.preference(
-                key: ScrollViewportHeightPreferenceKey.self,
-                value: proxy.size.height
-            )
-        }
-    }
-
     private func loadContentIfNeeded() async {
         guard isAvailableDate, hasCheckedAttendance, contents.isEmpty, !isLoading else {
             return
         }
+        guard transientContent?.dateKey != dateKey else {
+            return
+        }
 
+        transientContent = nil
+        transientFullTranslation = nil
         isLoading = true
         loadErrorMessage = nil
         attendancePromptScale = 1
         attendancePromptOpacity = 1
 
         do {
-            let fetchedContent = try await DailyContentRepository.fetchContent(for: dateKey)
-            modelContext.insert(fetchedContent)
-            try modelContext.save()
-            reloadAttendanceWidgetIfNeeded()
+            let result = try await DailyContentRepository.fetchContentResult(
+                for: dateKey,
+                cacheSupplement: shouldCacheContent
+            )
+
+            if shouldCacheContent {
+                modelContext.insert(result.item)
+                try modelContext.save()
+                DailyContentCachePolicy.pruneExpiredContent(in: modelContext)
+                reloadAttendanceWidgetIfNeeded()
+            } else {
+                transientContent = result.item
+                transientFullTranslation = result.fullTranslation
+            }
         } catch {
             loadErrorMessage = error.localizedDescription
         }
@@ -438,7 +457,10 @@ struct DailyContentPage: View {
             }
 
             try modelContext.save()
+            DailyContentCachePolicy.pruneExpiredContent(in: modelContext)
+            AttendanceSyncStore.markAttendanceChecked(for: dateKey)
             reloadAttendanceWidgetIfNeeded()
+            refreshAttendanceReminderIfNeeded()
         } catch {
             isLoading = false
             loadErrorMessage = error.localizedDescription
@@ -453,6 +475,24 @@ struct DailyContentPage: View {
         WidgetCenter.shared.reloadTimelines(ofKind: "NyanglishAttendanceWidget")
     }
 
+    private func refreshAttendanceReminderIfNeeded() {
+        guard isToday, attendanceNotificationEnabled else {
+            return
+        }
+
+        let hour = attendanceNotificationMinutesAfterMidnight / 60
+        let minute = attendanceNotificationMinutesAfterMidnight % 60
+        let checkedDateKeys = Set(attendanceRecords.map(\.dateKey)).union([dateKey])
+
+        Task {
+            try? await AttendanceNotificationScheduler.scheduleDailyReminder(
+                hour: hour,
+                minute: minute,
+                checkedDateKeys: checkedDateKeys
+            )
+        }
+    }
+
     @MainActor
     private func playAttendanceStampAnimation() async {
         attendancePromptScale = 1
@@ -465,11 +505,4 @@ struct DailyContentPage: View {
         try? await Task.sleep(nanoseconds: 260_000_000)
     }
 
-    private func updateScrollBottomState(bottomY: CGFloat) {
-        let bottomThreshold = scrollViewportHeight + 8
-        let isScrollable = bottomY > bottomThreshold
-        isAtScrollBottom = !isScrollable || bottomY <= bottomThreshold
-    }
-
-    private static let scrollCoordinateSpace = "dailyContentScroll"
 }

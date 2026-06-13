@@ -11,6 +11,7 @@ import UserNotifications
 enum AttendanceNotificationScheduler {
     static let notificationIdentifier = "daily-attendance-reminder"
     static let testNotificationIdentifier = "test-attendance-reminder"
+    private static let scheduledReminderDays = 60
 
     static func authorizationStatus() async -> UNAuthorizationStatus {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
@@ -20,38 +21,49 @@ enum AttendanceNotificationScheduler {
         try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
     }
 
-    static func scheduleDailyReminder(hour: Int, minute: Int) async throws {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
-
-        let content = UNMutableNotificationContent()
-        content.title = "오늘의 냥글리쉬"
-        content.body = "출석하고 오늘의 밈 표현을 확인해보세요."
-        content.sound = .default
-
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(
-            identifier: notificationIdentifier,
-            content: content,
-            trigger: trigger
+    static func scheduleDailyReminder(
+        hour: Int,
+        minute: Int,
+        checkedDateKeys: Set<String>
+    ) async throws {
+        let pendingReminderIdentifiers = reminderIdentifiersFromToday()
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [notificationIdentifier] + pendingReminderIdentifiers
         )
 
-        try await UNUserNotificationCenter.current().add(request)
+        let content = UNMutableNotificationContent()
+        content.title = "Today's Nyanglish"
+        content.body = "Check in to unlock today's English expression."
+        content.sound = .default
+
+        for reminderDate in reminderDatesFromToday(hour: hour, minute: minute, checkedDateKeys: checkedDateKeys) {
+            let dateKey = reminderDate.nyanglishDateKey
+            var dateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
+            dateComponents.second = 0
+
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: reminderIdentifier(for: dateKey),
+                content: content,
+                trigger: trigger
+            )
+
+            try await UNUserNotificationCenter.current().add(request)
+        }
     }
 
     static func cancelDailyReminder() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [notificationIdentifier] + reminderIdentifiersFromToday()
+        )
     }
 
     static func scheduleTestReminder(after seconds: TimeInterval = 5) async throws {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [testNotificationIdentifier])
 
         let content = UNMutableNotificationContent()
-        content.title = "테스트 알림"
-        content.body = "냥글리쉬 알림이 정상적으로 도착했습니다."
+        content.title = "Test Notification"
+        content.body = "Your Nyanglish notification is working."
         content.sound = .default
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
@@ -62,5 +74,54 @@ enum AttendanceNotificationScheduler {
         )
 
         try await UNUserNotificationCenter.current().add(request)
+    }
+
+    private static func reminderDatesFromToday(
+        hour: Int,
+        minute: Int,
+        checkedDateKeys: Set<String>
+    ) -> [Date] {
+        let calendar = Calendar.current
+        let now = Date.now
+        let today = calendar.startOfDay(for: now)
+
+        return (0..<scheduledReminderDays).compactMap { dayOffset in
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: today) else {
+                return nil
+            }
+
+            let dateKey = day.nyanglishDateKey
+            guard !checkedDateKeys.contains(dateKey) else {
+                return nil
+            }
+
+            var components = calendar.dateComponents([.year, .month, .day], from: day)
+            components.hour = hour
+            components.minute = minute
+            components.second = 0
+
+            guard let reminderDate = calendar.date(from: components), reminderDate > now else {
+                return nil
+            }
+
+            return reminderDate
+        }
+    }
+
+    private static func reminderIdentifiersFromToday() -> [String] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+
+        return (0..<scheduledReminderDays).compactMap { dayOffset in
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: today) else {
+                return nil
+            }
+
+            return reminderIdentifier(for: day.nyanglishDateKey)
+        }
+    }
+
+    private static func reminderIdentifier(for dateKey: String) -> String {
+        "\(notificationIdentifier)-\(dateKey)"
     }
 }
