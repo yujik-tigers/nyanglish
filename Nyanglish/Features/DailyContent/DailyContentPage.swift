@@ -111,15 +111,13 @@ struct DailyContentPage: View {
                 dateKey: item.dateKey,
                 imageURL: item.imageURL,
                 shouldCache: shouldCacheContent,
-                isSavingImage: isSavingImage
+                isSavingImage: isSavingImage,
+                saveAlert: $imageSaveAlert
             ) {
                 saveImage(imageURL: item.imageURL)
             } onClose: {
                 previewImage = nil
             }
-        }
-        .alert(item: $imageSaveAlert) { alert in
-            Alert(title: Text(alert.message))
         }
     }
 
@@ -545,7 +543,7 @@ struct DailyContentPage: View {
 
 }
 
-private struct ImageSaveAlert: Identifiable {
+struct ImageSaveAlert: Identifiable {
     let id = UUID()
     let message: String
 }

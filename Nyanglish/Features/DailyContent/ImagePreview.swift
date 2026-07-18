@@ -21,6 +21,7 @@ struct ImagePreview: View {
     let imageURL: String
     let shouldCache: Bool
     let isSavingImage: Bool
+    @Binding var saveAlert: ImageSaveAlert?
     let onSave: () -> Void
     let onClose: () -> Void
 
@@ -78,6 +79,9 @@ struct ImagePreview: View {
             }
             .padding(.top, 20)
             .padding(.trailing, 20)
+        }
+        .alert(item: $saveAlert) { alert in
+            Alert(title: Text(alert.message))
         }
     }
 
