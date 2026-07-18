@@ -56,7 +56,7 @@ struct NyanglishAttendanceProvider: TimelineProvider {
             }
 
             let content = try fetchStoredContent(for: dateKey, in: context)
-            let imageData = await fetchImageData(from: content?.imageURL)
+            let imageData = await fetchImageData(for: dateKey, imageURL: content?.imageURL)
             return NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: true, imageData: imageData, loadErrorMessage: nil)
         } catch {
             return NyanglishAttendanceEntry(
@@ -90,18 +90,17 @@ struct NyanglishAttendanceProvider: TimelineProvider {
         return try context.fetch(descriptor).first
     }
 
-    private static func fetchImageData(from imageURL: String?) async -> Data? {
-        guard let imageURL, let url = URL(string: imageURL) else {
+    private static func fetchImageData(for dateKey: String, imageURL: String?) async -> Data? {
+        guard imageURL != nil else {
             return nil
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200..<300).contains(httpResponse.statusCode) else {
-                return nil
-            }
-            return data
+            return try await DailyContentImageCache.imageData(
+                for: dateKey,
+                imageURL: imageURL,
+                shouldCache: true
+            )
         } catch {
             return nil
         }

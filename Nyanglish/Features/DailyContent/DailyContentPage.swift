@@ -27,6 +27,8 @@ struct DailyContentPage: View {
     @State private var isFullTranslationExpanded = false
     @State private var transientContent: DailyContentItem?
     @State private var transientFullTranslation: String?
+    @State private var isSavingImage = false
+    @State private var imageSaveAlert: ImageSaveAlert?
 
     private let contentTopPadding: CGFloat = 0
     private let logoCollapseDistance: CGFloat = 44
@@ -105,9 +107,19 @@ struct DailyContentPage: View {
             await loadContentIfNeeded()
         }
         .fullScreenCover(item: $previewImage) { item in
-            ImagePreview(url: item.url) {
+            ImagePreview(
+                dateKey: item.dateKey,
+                imageURL: item.imageURL,
+                shouldCache: shouldCacheContent,
+                isSavingImage: isSavingImage
+            ) {
+                saveImage(imageURL: item.imageURL)
+            } onClose: {
                 previewImage = nil
             }
+        }
+        .alert(item: $imageSaveAlert) { alert in
+            Alert(title: Text(alert.message))
         }
     }
 
@@ -190,10 +202,12 @@ struct DailyContentPage: View {
 
     @ViewBuilder
     private var imageSection: some View {
-        if let imageURL = content?.imageURL, let url = URL(string: imageURL) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
+        if let imageURL = content?.imageURL {
+            CachedContentImage(
+                dateKey: dateKey,
+                imageURL: imageURL,
+                shouldCache: shouldCacheContent
+            ) { image in
                     image
                         .resizable()
                         .scaledToFit()
@@ -202,29 +216,26 @@ struct DailyContentPage: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .contentShape(RoundedRectangle(cornerRadius: 12))
                         .onTapGesture {
-                            previewImage = ImagePreviewItem(url: url)
+                            previewImage = ImagePreviewItem(dateKey: dateKey, imageURL: imageURL)
                         }
-                case .failure:
-                    imagePlaceholder(text: "Couldn't load the image.")
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                case .empty:
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                @unknown default:
-                    imagePlaceholder(text: "Image")
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
+            } loading: {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } failure: {
+                imagePlaceholder(text: "Couldn't load the image.")
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .contextMenu {
-                ShareLink(item: url) {
+                Button {
+                    saveImage(imageURL: imageURL)
+                } label: {
                     Label("Save Image", systemImage: "square.and.arrow.down")
                 }
+                .disabled(isSavingImage)
 
                 if let content {
                     Button {} label: {
@@ -475,6 +486,33 @@ struct DailyContentPage: View {
         WidgetCenter.shared.reloadTimelines(ofKind: "NyanglishAttendanceWidget")
     }
 
+    private func saveImage(imageURL: String?) {
+        guard !isSavingImage else {
+            return
+        }
+
+        isSavingImage = true
+
+        Task {
+            do {
+                try await PhotoLibraryImageSaver.saveContentImage(
+                    dateKey: dateKey,
+                    imageURL: imageURL,
+                    shouldCache: shouldCacheContent
+                )
+                imageSaveAlert = ImageSaveAlert(message: "Image saved to Photos.")
+            } catch let error as PhotoLibraryImageSaveError {
+                imageSaveAlert = ImageSaveAlert(message: error.localizedDescription)
+            } catch let error as DailyContentImageCacheError {
+                imageSaveAlert = ImageSaveAlert(message: error.localizedDescription)
+            } catch {
+                imageSaveAlert = ImageSaveAlert(message: "Couldn't save this image.")
+            }
+
+            isSavingImage = false
+        }
+    }
+
     private func refreshAttendanceReminderIfNeeded() {
         guard isToday, attendanceNotificationEnabled else {
             return
@@ -505,4 +543,9 @@ struct DailyContentPage: View {
         try? await Task.sleep(nanoseconds: 260_000_000)
     }
 
+}
+
+private struct ImageSaveAlert: Identifiable {
+    let id = UUID()
+    let message: String
 }

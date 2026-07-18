@@ -8,15 +8,20 @@
 import SwiftUI
 
 struct ImagePreviewItem: Identifiable {
-    let url: URL
+    let dateKey: String
+    let imageURL: String
 
     var id: String {
-        url.absoluteString
+        "\(dateKey)-\(imageURL)"
     }
 }
 
 struct ImagePreview: View {
-    let url: URL
+    let dateKey: String
+    let imageURL: String
+    let shouldCache: Bool
+    let isSavingImage: Bool
+    let onSave: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -24,33 +29,42 @@ struct ImagePreview: View {
             Color.black
                 .ignoresSafeArea()
 
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
+            CachedContentImage(
+                dateKey: dateKey,
+                imageURL: imageURL,
+                shouldCache: shouldCache
+            ) { image in
                     image
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.horizontal, 16)
-                case .failure:
-                    statusText("Couldn't load the image.")
-                case .empty:
-                    ProgressView()
-                        .tint(.white)
-                @unknown default:
-                    statusText("Couldn't load the image.")
-                }
+            } loading: {
+                ProgressView()
+                    .tint(.white)
+            } failure: {
+                statusText("Couldn't load the image.")
             }
 
             HStack(spacing: 12) {
-                ShareLink(item: url) {
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
+                Button(action: onSave) {
+                    if isSavingImage {
+                        ProgressView()
+                            .tint(.white)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    } else {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
                 }
+                .buttonStyle(.plain)
+                .disabled(isSavingImage)
 
                 Button(action: onClose) {
                     Image(systemName: "xmark")

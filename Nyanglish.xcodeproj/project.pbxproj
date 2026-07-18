@@ -20,9 +20,10 @@
 		26A0001A2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0000C2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift */; };
 		26A0001B2FC4A00000000001 /* Nyanglish/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */; };
 		26A0001C2FC4A00000000001 /* NyanglishWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 26A000012FC4A00000000001 /* NyanglishWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		26A0002B2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */; };
-		26A0002D2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */; };
-		26A0002F2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */; };
+			26A0002B2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */; };
+			26A0002D2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */; };
+			26A0002F2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */; };
+			26A000322FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A000312FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentImageCache.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,9 +74,10 @@
 		26A0000B2FC4A00000000001 /* Nyanglish/Core/Date/Date+Nyanglish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Nyanglish/Core/Date/Date+Nyanglish.swift"; sourceTree = "<group>"; };
 		26A0000C2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/NyanglishModelStore.swift; sourceTree = "<group>"; };
 		26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Nyanglish/Assets.xcassets; sourceTree = "<group>"; };
-		26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentSupplementStore.swift; sourceTree = "<group>"; };
-		26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/AttendanceSyncStore.swift; sourceTree = "<group>"; };
-		26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentCachePolicy.swift; sourceTree = "<group>"; };
+			26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentSupplementStore.swift; sourceTree = "<group>"; };
+			26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/AttendanceSyncStore.swift; sourceTree = "<group>"; };
+			26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentCachePolicy.swift; sourceTree = "<group>"; };
+			26A000312FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nyanglish/Shared/Data/DailyContentImageCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -163,10 +165,11 @@
 				26A0000A2FC4A00000000001 /* Nyanglish/Data/API/APIConfiguration.swift */,
 				26A0000B2FC4A00000000001 /* Nyanglish/Core/Date/Date+Nyanglish.swift */,
 				26A0000C2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift */,
-				26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */,
-				26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */,
-				26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */,
-				26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */,
+					26A0002C2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift */,
+					26A0002E2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift */,
+					26A000302FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift */,
+					26A000312FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentImageCache.swift */,
+					26A0000D2FC4A00000000001 /* Nyanglish/Assets.xcassets */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -388,10 +391,11 @@
 				26A000182FC4A00000000001 /* Nyanglish/Data/API/APIConfiguration.swift in Sources */,
 				26A000192FC4A00000000001 /* Nyanglish/Core/Date/Date+Nyanglish.swift in Sources */,
 				26A0001A2FC4A00000000001 /* Nyanglish/Shared/Data/NyanglishModelStore.swift in Sources */,
-				26A0002B2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift in Sources */,
-				26A0002D2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift in Sources */,
-				26A0002F2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift in Sources */,
-			);
+					26A0002B2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentSupplementStore.swift in Sources */,
+					26A0002D2FC4A00000000001 /* Nyanglish/Shared/Data/AttendanceSyncStore.swift in Sources */,
+					26A0002F2FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentCachePolicy.swift in Sources */,
+					26A000322FC4A00000000001 /* Nyanglish/Shared/Data/DailyContentImageCache.swift in Sources */,
+				);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */

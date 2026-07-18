@@ -22,6 +22,8 @@ enum DailyContentCachePolicy {
     @MainActor
     static func pruneExpiredContent(in context: ModelContext, today: Date = .now) {
         let cutoffDate = cutoffDate(today: today)
+        DailyContentImageCache.pruneExpiredImages(today: today)
+        DailyContentSupplementStore.pruneFullTranslations(before: cutoffDate)
         let descriptor = FetchDescriptor<DailyContentItem>(
             predicate: #Predicate { item in
                 item.date < cutoffDate
@@ -31,13 +33,11 @@ enum DailyContentCachePolicy {
         do {
             let expiredContents = try context.fetch(descriptor)
             guard !expiredContents.isEmpty else {
-                DailyContentSupplementStore.pruneFullTranslations(before: cutoffDate)
                 return
             }
 
             expiredContents.forEach(context.delete)
             try context.save()
-            DailyContentSupplementStore.pruneFullTranslations(before: cutoffDate)
         } catch {
             context.rollback()
         }

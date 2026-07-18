@@ -37,6 +37,8 @@
 	<dict/>
 	<key>NyanglishVersionSuffix</key>
 	<string>beta</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Nyanglish needs permission to save content images to your photo library.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
