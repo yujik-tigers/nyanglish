@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "OnboardingLogo.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
@@ -9,7 +10,6 @@
       "scale" : "2x"
     },
     {
-      "filename" : "nyanglish_3d_cute_gothic_logo_gray-removebg-preview 복사본.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

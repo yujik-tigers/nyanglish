@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 enum NyanglishModelStore {
-    static let appGroupIdentifier = "group.yujik-tigers.Nyanglish"
+    static let appGroupIdentifier = "group.yujiktigers.Nyanglish"
 
     static let schema = Schema([
         DailyContentItem.self,

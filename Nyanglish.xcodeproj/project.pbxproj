@@ -537,6 +537,7 @@
 				CODE_SIGN_ENTITLEMENTS = Config/Nyanglish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KP6GKUQKT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/Nyanglish-Info.plist";
@@ -569,7 +570,7 @@
 				CODE_SIGN_ENTITLEMENTS = Config/Nyanglish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9B8ZF2YT42;
+				DEVELOPMENT_TEAM = KP6GKUQKT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/Nyanglish-Info.plist";
@@ -698,6 +699,7 @@
 				CODE_SIGN_ENTITLEMENTS = Config/NyanglishWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KP6GKUQKT5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/NyanglishWidget-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -732,6 +734,7 @@
 				CODE_SIGN_ENTITLEMENTS = Config/NyanglishWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KP6GKUQKT5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/NyanglishWidget-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
