@@ -47,7 +47,7 @@ struct ContentView: View {
             showTodayHome()
         }
         .task {
-            await synchronizeTodayAttendanceFromSharedStore()
+            synchronizeTodayFromSharedStores()
             mirrorTodayAttendanceIfNeeded()
             pruneDailyContentCache()
             await refreshAttendanceReminderIfNeeded()
@@ -59,7 +59,7 @@ struct ContentView: View {
 
             Task {
                 showTodayHome()
-                await synchronizeTodayAttendanceFromSharedStore()
+                synchronizeTodayFromSharedStores()
                 mirrorTodayAttendanceIfNeeded()
                 pruneDailyContentCache()
                 await refreshAttendanceReminderIfNeeded()
@@ -83,7 +83,7 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             showTodayHome()
             Task {
-                await synchronizeTodayAttendanceFromSharedStore()
+                synchronizeTodayFromSharedStores()
                 mirrorTodayAttendanceIfNeeded()
                 pruneDailyContentCache()
                 await refreshAttendanceReminderIfNeeded()
@@ -156,38 +156,16 @@ struct ContentView: View {
     }
 
     private func handleDeepLink(_ url: URL) {
-        guard url.scheme == "nyanglish" else {
-            return
-        }
-
-        if url.host == "content", url.path == "/today" {
+        switch NyanglishDeepLink(url: url) {
+        case .todayContent:
             showTodayContent()
+        case nil:
+            return
         }
     }
 
-    @MainActor
-    private func synchronizeTodayAttendanceFromSharedStore() async {
-        let todayKey = Date.now.nyanglishDateKey
-        guard AttendanceSyncStore.hasCheckedAttendance(for: todayKey),
-              !checkedDateKeys.contains(todayKey) else {
-            return
-        }
-
-        do {
-            var descriptor = FetchDescriptor<AttendanceRecord>(
-                predicate: #Predicate { record in
-                    record.dateKey == todayKey
-                }
-            )
-            descriptor.fetchLimit = 1
-
-            if try modelContext.fetch(descriptor).isEmpty {
-                modelContext.insert(AttendanceRecord(dateKey: todayKey))
-                try modelContext.save()
-            }
-        } catch {
-            modelContext.rollback()
-        }
+    private func synchronizeTodayFromSharedStores() {
+        DailyContentSharedStateSynchronizer.synchronizeTodayFromSharedStores(in: modelContext)
     }
 
     private func mirrorTodayAttendanceIfNeeded() {

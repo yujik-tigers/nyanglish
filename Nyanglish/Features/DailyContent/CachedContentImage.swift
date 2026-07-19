@@ -12,6 +12,7 @@ struct CachedContentImage<Success: View, Loading: View, Failure: View>: View {
     let dateKey: String
     let imageURL: String
     let shouldCache: Bool
+    let allowsDownload: Bool
     let success: (Image) -> Success
     let loading: () -> Loading
     let failure: () -> Failure
@@ -43,10 +44,14 @@ struct CachedContentImage<Success: View, Loading: View, Failure: View>: View {
         image = nil
         didFail = false
 
-        if shouldCache,
-           let data = DailyContentImageCache.cachedImageData(for: dateKey, imageURL: imageURL),
+        if let data = DailyContentImageCache.cachedImageData(for: dateKey, imageURL: imageURL),
            let cachedImage = UIImage(data: data) {
             image = cachedImage
+            return
+        }
+
+        guard allowsDownload else {
+            didFail = true
             return
         }
 

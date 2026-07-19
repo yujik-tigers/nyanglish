@@ -15,6 +15,7 @@ struct DailyContentPage: View {
     let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     @AppStorage("attendanceNotificationEnabled") private var attendanceNotificationEnabled = false
     @AppStorage("attendanceNotificationMinutesAfterMidnight") private var attendanceNotificationMinutesAfterMidnight = 20 * 60
     @Query private var contents: [DailyContentItem]
@@ -29,6 +30,7 @@ struct DailyContentPage: View {
     @State private var transientFullTranslation: String?
     @State private var isSavingImage = false
     @State private var imageSaveAlert: ImageSaveAlert?
+    @State private var contentPreparationAlert: ContentPreparationAlert?
 
     private let contentTopPadding: CGFloat = 0
     private let logoCollapseDistance: CGFloat = 44
@@ -85,7 +87,7 @@ struct DailyContentPage: View {
     }
 
     private var contentLoadTrigger: String {
-        "\(dateKey)-\(contents.isEmpty)-\(transientContent == nil)"
+        "\(dateKey)-\(hasCheckedAttendance)-\(contents.isEmpty)-\(transientContent == nil)"
     }
 
     var body: some View {
@@ -118,6 +120,16 @@ struct DailyContentPage: View {
             } onClose: {
                 previewImage = nil
             }
+        }
+        .alert(item: $contentPreparationAlert) { alert in
+            Alert(
+                title: Text("Couldn't prepare today's content."),
+                message: Text(alert.message),
+                primaryButton: .default(Text("Send Feedback")) {
+                    openURL(Self.feedbackFormURL)
+                },
+                secondaryButton: .cancel(Text("Cancel"))
+            )
         }
     }
 
@@ -204,7 +216,8 @@ struct DailyContentPage: View {
             CachedContentImage(
                 dateKey: dateKey,
                 imageURL: imageURL,
-                shouldCache: shouldCacheContent
+                shouldCache: shouldCacheContent,
+                allowsDownload: true
             ) { image in
                     image
                         .resizable()
@@ -425,6 +438,14 @@ struct DailyContentPage: View {
             )
 
             if shouldCacheContent {
+                if let imageURL = result.item.imageURL {
+                    _ = try await DailyContentImageCache.imageData(
+                        for: dateKey,
+                        imageURL: imageURL,
+                        shouldCache: true
+                    )
+                }
+
                 modelContext.insert(result.item)
                 try modelContext.save()
                 DailyContentCachePolicy.pruneExpiredContent(in: modelContext)
@@ -450,29 +471,16 @@ struct DailyContentPage: View {
         loadErrorMessage = nil
 
         do {
-            var fetchedContent: DailyContentItem?
-            if contents.isEmpty {
-                fetchedContent = try await DailyContentRepository.fetchContent(for: dateKey)
-            }
+            try await DailyContentPreparationService.prepareContentAndAttendance(for: dateKey, in: modelContext)
 
             isLoading = false
             await playAttendanceStampAnimation()
-
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
-                if let fetchedContent {
-                    modelContext.insert(fetchedContent)
-                }
-                modelContext.insert(AttendanceRecord(dateKey: dateKey))
-            }
-
-            try modelContext.save()
-            DailyContentCachePolicy.pruneExpiredContent(in: modelContext)
-            AttendanceSyncStore.markAttendanceChecked(for: dateKey)
             reloadAttendanceWidgetIfNeeded()
             refreshAttendanceReminderIfNeeded()
         } catch {
             isLoading = false
             loadErrorMessage = error.localizedDescription
+            contentPreparationAlert = ContentPreparationAlert(message: error.localizedDescription)
         }
     }
 
@@ -529,6 +537,10 @@ struct DailyContentPage: View {
         }
     }
 
+    private static let feedbackFormURL = URL(
+        string: "https://docs.google.com/forms/d/1-gZwLOj1orNvOR1_heR-X8PKRS981oaqYxtsm_k1QnA/viewform?edit_requested=true"
+    )!
+
     @MainActor
     private func playAttendanceStampAnimation() async {
         attendancePromptScale = 1
@@ -544,6 +556,11 @@ struct DailyContentPage: View {
 }
 
 struct ImageSaveAlert: Identifiable {
+    let id = UUID()
+    let message: String
+}
+
+struct ContentPreparationAlert: Identifiable {
     let id = UUID()
     let message: String
 }

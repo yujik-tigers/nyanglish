@@ -15,11 +15,18 @@ struct NyanglishAttendanceEntry: TimelineEntry {
     let hasCheckedAttendance: Bool
     let imageData: Data?
     let loadErrorMessage: String?
+    let isPreparing: Bool
 }
 
 struct NyanglishAttendanceProvider: TimelineProvider {
     func placeholder(in context: Context) -> NyanglishAttendanceEntry {
-        NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: nil)
+        NyanglishAttendanceEntry(
+            date: .now,
+            hasCheckedAttendance: false,
+            imageData: nil,
+            loadErrorMessage: nil,
+            isPreparing: false
+        )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (NyanglishAttendanceEntry) -> Void) {
@@ -39,6 +46,19 @@ struct NyanglishAttendanceProvider: TimelineProvider {
     @MainActor
     private static func currentEntry() async -> NyanglishAttendanceEntry {
         let dateKey = Date.now.nyanglishDateKey
+        let preparationStatus = DailyContentPreparationStateStore.status(for: dateKey)
+
+        if let snapshot = DailyContentWidgetSnapshotStore.snapshot(for: dateKey) {
+            let imageData = await displayImageData(for: dateKey, imageURL: snapshot.imageURL)
+
+            return NyanglishAttendanceEntry(
+                date: .now,
+                hasCheckedAttendance: true,
+                imageData: imageData,
+                loadErrorMessage: nil,
+                isPreparing: false
+            )
+        }
 
         do {
             let container = try NyanglishModelStore.makeContainer()
@@ -51,19 +71,38 @@ struct NyanglishAttendanceProvider: TimelineProvider {
                     date: .now,
                     hasCheckedAttendance: false,
                     imageData: nil,
-                    loadErrorMessage: NyanglishWidgetStatusStore.loadErrorMessage(for: dateKey)
+                    loadErrorMessage: loadErrorMessage(from: preparationStatus),
+                    isPreparing: preparationStatus == .preparing
                 )
             }
 
             let content = try fetchStoredContent(for: dateKey, in: context)
-            let imageData = await fetchImageData(for: dateKey, imageURL: content?.imageURL)
-            return NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: true, imageData: imageData, loadErrorMessage: nil)
+            let imageData = await displayImageData(for: dateKey, imageURL: content?.imageURL)
+
+            return NyanglishAttendanceEntry(
+                date: .now,
+                hasCheckedAttendance: true,
+                imageData: imageData,
+                loadErrorMessage: nil,
+                isPreparing: false
+            )
         } catch {
+            if AttendanceSyncStore.hasCheckedAttendance(for: dateKey) {
+                return NyanglishAttendanceEntry(
+                    date: .now,
+                    hasCheckedAttendance: true,
+                    imageData: nil,
+                    loadErrorMessage: nil,
+                    isPreparing: false
+                )
+            }
+
             return NyanglishAttendanceEntry(
                 date: .now,
                 hasCheckedAttendance: false,
                 imageData: nil,
-                loadErrorMessage: error.localizedDescription
+                loadErrorMessage: loadErrorMessage(from: preparationStatus) ?? error.localizedDescription,
+                isPreparing: preparationStatus == .preparing
             )
         }
     }
@@ -90,54 +129,24 @@ struct NyanglishAttendanceProvider: TimelineProvider {
         return try context.fetch(descriptor).first
     }
 
-    private static func fetchImageData(for dateKey: String, imageURL: String?) async -> Data? {
-        guard imageURL != nil else {
-            return nil
+    private static func displayImageData(for dateKey: String, imageURL: String?) async -> Data? {
+        if let thumbnailData = DailyContentImageCache.cachedWidgetThumbnailData(for: dateKey, imageURL: imageURL) {
+            return thumbnailData
         }
 
         do {
-            return try await DailyContentImageCache.imageData(
-                for: dateKey,
-                imageURL: imageURL,
-                shouldCache: true
-            )
+            return try await DailyContentImageCache.prepareWidgetThumbnail(for: dateKey, imageURL: imageURL)
         } catch {
-            return nil
+            return DailyContentImageCache.cachedImageData(for: dateKey, imageURL: imageURL)
         }
     }
-}
 
-enum NyanglishWidgetStatusStore {
-    private static let errorDateKey = "attendanceWidget.errorDateKey"
-    private static let errorMessageKey = "attendanceWidget.errorMessage"
-
-    static func loadErrorMessage(for dateKey: String) -> String? {
-        guard let defaults = UserDefaults(suiteName: NyanglishModelStore.appGroupIdentifier),
-              defaults.string(forKey: errorDateKey) == dateKey else {
+    private static func loadErrorMessage(from status: DailyContentPreparationStatus?) -> String? {
+        guard case let .failed(message) = status else {
             return nil
         }
 
-        return defaults.string(forKey: errorMessageKey)
-    }
-
-    static func saveLoadErrorMessage(_ message: String, for dateKey: String) {
-        guard let defaults = UserDefaults(suiteName: NyanglishModelStore.appGroupIdentifier) else {
-            return
-        }
-
-        defaults.set(dateKey, forKey: errorDateKey)
-        defaults.set(message, forKey: errorMessageKey)
-        defaults.synchronize()
-    }
-
-    static func clearLoadErrorMessage() {
-        guard let defaults = UserDefaults(suiteName: NyanglishModelStore.appGroupIdentifier) else {
-            return
-        }
-
-        defaults.removeObject(forKey: errorDateKey)
-        defaults.removeObject(forKey: errorMessageKey)
-        defaults.synchronize()
+        return message
     }
 }
 
@@ -148,28 +157,19 @@ struct CheckAttendanceIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         let dateKey = Date.now.nyanglishDateKey
-        NyanglishWidgetStatusStore.clearLoadErrorMessage()
+        DailyContentPreparationStateStore.markPreparing(for: dateKey)
         WidgetCenter.shared.reloadAllTimelines()
 
         do {
             let container = try NyanglishModelStore.makeContainer()
             let context = ModelContext(container)
-
-            if try !NyanglishAttendanceProvider.hasAttendanceRecord(for: dateKey, in: context) {
-                if try NyanglishAttendanceProvider.fetchStoredContent(for: dateKey, in: context) == nil {
-                    let fetchedContent = try await DailyContentRepository.fetchContent(for: dateKey)
-                    context.insert(fetchedContent)
-                }
-
-                context.insert(AttendanceRecord(dateKey: dateKey))
-                try context.save()
-                DailyContentCachePolicy.pruneExpiredContent(in: context)
-            }
-
-            AttendanceSyncStore.markAttendanceChecked(for: dateKey)
-            NyanglishWidgetStatusStore.clearLoadErrorMessage()
+            try await DailyContentPreparationService.prepareContentAndAttendance(
+                for: dateKey,
+                in: context,
+                requiresImageCache: false
+            )
         } catch {
-            NyanglishWidgetStatusStore.saveLoadErrorMessage(error.localizedDescription, for: dateKey)
+            DailyContentPreparationStateStore.markFailed(error.localizedDescription, for: dateKey)
         }
 
         WidgetCenter.shared.reloadAllTimelines()
@@ -184,7 +184,8 @@ struct NyanglishAttendanceWidgetView: View {
         ZStack {
             if entry.hasCheckedAttendance {
                 contentImage
-                    .widgetURL(Self.todayContentURL)
+            } else if entry.isPreparing {
+                preparingView
             } else {
                 attendanceButton
                 if let loadErrorMessage = entry.loadErrorMessage {
@@ -203,6 +204,7 @@ struct NyanglishAttendanceWidgetView: View {
                 }
             }
         }
+        .widgetURL(entry.hasCheckedAttendance ? Self.todayContentURL : nil)
         .containerBackground(Color("Canvas"), for: .widget)
     }
 
@@ -232,7 +234,7 @@ struct NyanglishAttendanceWidgetView: View {
                     .frame(width: 118, height: 118)
                     .accessibilityHidden(true)
 
-                Text("Check in")
+                Text(entry.loadErrorMessage == nil ? "Check in" : "Retry")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
@@ -242,6 +244,20 @@ struct NyanglishAttendanceWidgetView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
+    }
+
+    private var preparingView: some View {
+        VStack(spacing: 10) {
+            ProgressView()
+                .tint(Color("AttendanceBadgeBackground"))
+
+            Text("Preparing")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private static let todayContentURL = URL(string: "nyanglish://content/today")
@@ -264,7 +280,13 @@ struct NyanglishAttendanceWidget: Widget {
 #Preview(as: .systemSmall) {
     NyanglishAttendanceWidget()
 } timeline: {
-    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: nil)
-    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: "No lesson is available today.")
-    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: true, imageData: nil, loadErrorMessage: nil)
+    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: nil, isPreparing: false)
+    NyanglishAttendanceEntry(date: .now, hasCheckedAttendance: false, imageData: nil, loadErrorMessage: nil, isPreparing: true)
+    NyanglishAttendanceEntry(
+        date: .now,
+        hasCheckedAttendance: false,
+        imageData: nil,
+        loadErrorMessage: "No lesson is available today.",
+        isPreparing: false
+    )
 }

@@ -33,7 +33,8 @@ struct ImagePreview: View {
             CachedContentImage(
                 dateKey: dateKey,
                 imageURL: imageURL,
-                shouldCache: shouldCache
+                shouldCache: shouldCache,
+                allowsDownload: true
             ) { image in
                     image
                         .resizable()

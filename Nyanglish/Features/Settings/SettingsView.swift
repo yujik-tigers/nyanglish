@@ -23,7 +23,6 @@ struct SettingsView: View {
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var dataResetAlert: DataResetAlert?
     @State private var errorMessage: String?
-
     private var todayKey: String {
         Date.now.nyanglishDateKey
     }
@@ -436,6 +435,7 @@ struct SettingsView: View {
             errorMessage = "Couldn't schedule the test notification."
         }
     }
+
 #endif
 
     private func dateForReminderMinutes(_ minutesAfterMidnight: Int) -> Date {
@@ -454,6 +454,8 @@ struct SettingsView: View {
         do {
             try modelContext.save()
             AttendanceSyncStore.clearAll()
+            DailyContentWidgetSnapshotStore.clearAll()
+            DailyContentPreparationStateStore.clearAll()
             DailyContentSupplementStore.clearAllFullTranslations()
             WidgetCenter.shared.reloadAllTimelines()
             onResetTodayData()
@@ -498,6 +500,8 @@ struct SettingsView: View {
         do {
             try modelContext.save()
             AttendanceSyncStore.clearAttendance(for: todayKey)
+            DailyContentWidgetSnapshotStore.clear(for: todayKey)
+            DailyContentPreparationStateStore.clear(for: todayKey)
             DailyContentSupplementStore.removeFullTranslation(for: todayKey)
             WidgetCenter.shared.reloadAllTimelines()
             onResetTodayData()
