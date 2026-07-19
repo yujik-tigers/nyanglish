@@ -31,7 +31,7 @@ struct NyanglishAttendanceProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<NyanglishAttendanceEntry>) -> Void) {
         Task {
             let entry = await Self.currentEntry()
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now.addingTimeInterval(1800)
+            let nextRefresh = Date.nyanglishWidgetRefreshDate()
             completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
         }
     }

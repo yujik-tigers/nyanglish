@@ -93,6 +93,13 @@ extension Date {
         return keys
     }
 
+    static func nyanglishWidgetRefreshDate(after now: Date = .now, calendar: Calendar = .current) -> Date {
+        let intervalRefresh = calendar.date(byAdding: .minute, value: 30, to: now) ?? now.addingTimeInterval(1800)
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? intervalRefresh
+        let midnightRefresh = nextDay.addingTimeInterval(5)
+        return min(intervalRefresh, midnightRefresh)
+    }
+
     private static let nyanglishDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")

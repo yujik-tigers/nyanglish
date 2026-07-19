@@ -7,6 +7,7 @@
 
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -43,9 +44,7 @@ struct ContentView: View {
         .ignoresSafeArea(.container, edges: .bottom)
         .background(Color("Canvas"))
         .onAppear {
-            prepareInitialDateState()
-            mirrorTodayAttendanceIfNeeded()
-            pruneDailyContentCache()
+            showTodayHome()
         }
         .task {
             await synchronizeTodayAttendanceFromSharedStore()
@@ -59,6 +58,7 @@ struct ContentView: View {
             }
 
             Task {
+                showTodayHome()
                 await synchronizeTodayAttendanceFromSharedStore()
                 mirrorTodayAttendanceIfNeeded()
                 pruneDailyContentCache()
@@ -79,6 +79,15 @@ struct ContentView: View {
         }
         .onOpenURL { url in
             handleDeepLink(url)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            showTodayHome()
+            Task {
+                await synchronizeTodayAttendanceFromSharedStore()
+                mirrorTodayAttendanceIfNeeded()
+                pruneDailyContentCache()
+                await refreshAttendanceReminderIfNeeded()
+            }
         }
     }
 
@@ -104,7 +113,7 @@ struct ContentView: View {
         }
     }
 
-    private func prepareInitialDateState() {
+    private func showTodayHome() {
         let todayKey = Date.now.nyanglishDateKey
 
         if installedDateKey.isEmpty {
@@ -112,6 +121,7 @@ struct ContentView: View {
         }
 
         selectedDateKey = todayKey
+        selectedTab = .content
         clampSelectedDateToAvailableRange()
     }
 
@@ -135,8 +145,11 @@ struct ContentView: View {
     }
 
     private func showTodayContent() {
-        let todayKey = Date.now.nyanglishDateKey
-        selectedDateKey = todayKey
+        if installedDateKey.isEmpty {
+            installedDateKey = Date.now.nyanglishDateKey
+        }
+
+        selectedDateKey = Date.now.nyanglishDateKey
         withAnimation(.easeInOut(duration: 0.18)) {
             selectedTab = .content
         }
