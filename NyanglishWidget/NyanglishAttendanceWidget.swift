@@ -127,6 +127,7 @@ enum NyanglishWidgetStatusStore {
 
         defaults.set(dateKey, forKey: errorDateKey)
         defaults.set(message, forKey: errorMessageKey)
+        defaults.synchronize()
     }
 
     static func clearLoadErrorMessage() {
@@ -136,6 +137,7 @@ enum NyanglishWidgetStatusStore {
 
         defaults.removeObject(forKey: errorDateKey)
         defaults.removeObject(forKey: errorMessageKey)
+        defaults.synchronize()
     }
 }
 
@@ -146,6 +148,8 @@ struct CheckAttendanceIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         let dateKey = Date.now.nyanglishDateKey
+        NyanglishWidgetStatusStore.clearLoadErrorMessage()
+        WidgetCenter.shared.reloadAllTimelines()
 
         do {
             let container = try NyanglishModelStore.makeContainer()

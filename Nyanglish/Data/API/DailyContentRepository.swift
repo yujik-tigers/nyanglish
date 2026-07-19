@@ -30,7 +30,6 @@ enum DailyContentRepository {
             DailyContentSupplementStore.saveFullTranslation(fullTranslation, for: dateKey)
         }
         let item = response.content.dailyContentItem(dateKey: dateKey, date: date)
-        await DailyContentImageCache.cacheImageIfNeeded(for: item, shouldCache: cacheSupplement)
 
         return DailyContentFetchResult(
             item: item,

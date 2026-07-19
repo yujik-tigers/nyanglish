@@ -51,18 +51,6 @@ enum DailyContentImageCache {
         return data
     }
 
-    static func cacheImageIfNeeded(for item: DailyContentItem, shouldCache: Bool) async {
-        guard shouldCache, item.imageURL != nil else {
-            return
-        }
-
-        _ = try? await imageData(
-            for: item.dateKey,
-            imageURL: item.imageURL,
-            shouldCache: shouldCache
-        )
-    }
-
     static func pruneExpiredImages(today: Date = .now) {
         let root = imageCacheRootDirectory()
         guard let dateDirectories = try? FileManager.default.contentsOfDirectory(
